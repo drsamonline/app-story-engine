@@ -1,5 +1,11 @@
 # app-story-engine
 
+<!-- shot:start -->
+
+![Screenshot](docs/shot.png)
+
+<!-- shot:end -->
+
 [![live](https://img.shields.io/badge/live-online-22c55e)](https://drsamonline.github.io/app-story-engine/)
 [![download](https://img.shields.io/github/v/release/drsamonline/app-story-engine?label=download&color=blue)](https://github.com/drsamonline/app-story-engine/releases/latest)
 [![tests](https://img.shields.io/badge/tests-141%20assertions-3f7a52)](test-node.js)
