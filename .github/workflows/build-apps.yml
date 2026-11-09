@@ -1,16 +1,40 @@
-name: Build portable EXE + Android APK
+# Build + release + deploy. One push, one pipeline, all from the same commit.
+#
+# SPDX-FileCopyrightText: 2026 Dr Sohil Momin
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+#
+# The whole pipeline lives in the public app-builder kit, so a fix there reaches
+# every app at once. Do not inline it here again.
+#
+# The pin is the fleet's single target (forge/canonical-pins.json). The caller
+# MUST grant the permissions: a reusable workflow cannot raise its own above the
+# caller's, and a caller that omits them fails at STARTUP with no job at all.
+name: Build + deploy
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: {}
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: build
+  cancel-in-progress: true
 
 jobs:
-  build:
-    uses: drsamonline/app-builder/.github/workflows/build.yml@main
+  app:
+    uses: drsamonline/app-builder/.github/workflows/build.yml@bbef0db943e11f1a280ac8a063b79e66b7f6d9db
     with:
       app_name: app-story-engine
-      app_src: docs
+      app_src: docs/play
+      deploy_path: docs
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
