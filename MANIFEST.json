@@ -9,16 +9,41 @@
       "at": "2026-11-09T18:40:06Z"
     },
     "docs/index.html": {
-      "sha": "c2a4bb7116286067ce45fc81fc2b35992055e9bc",
-      "producer": "new-app@e249350",
+      "sha": "4d95e060c4edeba8dd48ce659d2e9dd231143bfa",
+      "producer": "app-story-engine@1.0.0",
       "class": "generated",
-      "at": "2026-11-09T18:40:06Z"
+      "at": "2026-11-09T18:42:48Z"
     },
     ".github/workflows/build-apps.yml": {
       "sha": "1ddae5436988c9a2170639d34cc87976c80a02c1",
       "producer": "new-app@e249350",
       "class": "canonical",
       "at": "2026-11-09T18:40:06Z"
+    },
+    "docs/play/index.html": {
+      "sha": "b88b1e28df6bd753d7827eeb6ae026ec8367b67c",
+      "producer": "app-story-engine@1.0.0",
+      "class": "agent",
+      "at": "2026-11-09T18:42:49Z"
+    },
+    "docs/play/story-engine.js": {
+      "sha": "6f9e8bc4757830ed2f2a509f448054859c39a6ad",
+      "producer": "app-story-engine@1.0.0",
+      "class": "agent",
+      "at": "2026-11-09T18:42:49Z"
+    },
+    "docs/play/book.js": {
+      "sha": "2039b4262b0df64a64a076df69ade18d3ee80cf1",
+      "producer": "app-story-engine@1.0.0",
+      "class": "agent",
+      "at": "2026-11-09T18:42:49Z"
+    },
+    "test-node.js": {
+      "sha": "31f55ea892a9e6ee76c9a0ac27a1fae78fecb847",
+      "producer": "app-story-engine@1.0.0",
+      "class": "agent",
+      "at": "2026-11-09T18:42:49Z"
     }
-  }
+  },
+  "updated": "2026-11-09T18:42:49Z"
 }
