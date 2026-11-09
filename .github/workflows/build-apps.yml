@@ -1,0 +1,16 @@
+name: Build portable EXE + Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    uses: drsamonline/app-builder/.github/workflows/build.yml@main
+    with:
+      app_name: app-story-engine
+      app_src: docs

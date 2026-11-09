@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Engine — a book the reader moves through</title>
+<meta name="description" content="An offline reader for books that remember: choices carry state, close doors and open others, and the trail shows every passage you have been through. One HTML file, no accounts, no server.">
+<meta name="theme-color" content="#12100c">
+<style>
+  :root{
+    --ink:#0e0c0a; --panel:#17140f; --line:#302a20; --paper:#f2e9d8; --paper-ink:#191510;
+    --amber:#d9a02b; --amber-dim:#8a6420; --green:#3f7a52; --mut:#9c9384;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1100px 480px at 20% -10%, #262015 0%, transparent 62%),
+      radial-gradient(800px 360px at 92% 20%, #1b1710 0%, transparent 60%),
+      var(--ink);
+    color:#e9e2d4; font:15px/1.65 var(--mono); -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--amber)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  header.top{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;background:rgba(14,12,10,.8);backdrop-filter:blur(6px)}
+  .top .wrap{display:flex;align-items:center;gap:14px;height:58px}
+  .mark{width:26px;height:26px;border:1px solid var(--amber);border-radius:5px;position:relative;flex:0 0 auto}
+  .mark:before{content:"";position:absolute;inset:5px;border:1px solid var(--amber-dim);border-radius:3px}
+  .mark:after{content:"";position:absolute;left:50%;top:3px;bottom:3px;width:1px;background:var(--amber);opacity:.6}
+  .brand{font:600 13px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase}
+  .top nav{margin-left:auto;display:flex;gap:18px;font-size:12.5px}
+  .top nav a{color:var(--mut);text-decoration:none}
+  .top nav a:hover{color:var(--amber)}
+  @media (max-width:760px){.top nav{display:none}}
+
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:64px 0 44px}
+  @media (max-width:900px){.hero{grid-template-columns:1fr;padding:40px 0 28px}}
+  .kicker{font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--amber);margin:0 0 14px}
+  h1{font:400 clamp(40px,6.4vw,68px)/0.98 var(--serif);margin:0 0 18px;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--amber)}
+  .lede{font:16px/1.72 var(--mono);color:#c7bfae;max-width:54ch;margin:0 0 26px}
+  .lede strong{color:#f0e7d4;font-weight:600}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-block;padding:13px 20px;border-radius:9px;text-decoration:none;font-weight:600;
+       background:var(--amber);color:#1a1204;border:1px solid var(--amber)}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.alt{background:transparent;color:#e9e2d4;border:1px solid var(--line)}
+  .btn.alt:hover{border-color:var(--amber-dim);color:#fff}
+  .fine{color:var(--mut);font-size:12px;margin-top:14px}
+
+  /* a leaf, tilted, to show what the app is */
+  .leaf{
+    background:linear-gradient(180deg,#f6efdf,#eadfc7);color:var(--paper-ink);border-radius:12px;
+    padding:22px 22px 18px;border:1px solid #cbbd9f;transform:rotate(-1.2deg);
+    box-shadow:0 26px 60px rgba(0,0,0,.55), inset 0 1px 0 #fff8;position:relative;
+  }
+  .leaf:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:12px 0 0 12px;
+    background:repeating-linear-gradient(180deg,#c9b58c 0 2px,transparent 2px 7px);opacity:.55}
+  .leaf .k{font:600 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:#8a6a2a;margin:0 0 8px}
+  .leaf h3{font:400 24px/1.15 var(--serif);margin:0 0 10px}
+  .leaf p{font:15px/1.65 var(--serif);margin:0 0 14px;color:#241e15}
+  .leaf .opts{display:grid;gap:7px}
+  .leaf .opt{font:400 13.5px/1.4 var(--serif);background:#fffdf6;border:1px solid #c8b995;border-radius:8px;padding:9px 11px}
+  .leaf .opt.closed{color:#8b8375;background:#efe8d8;border-style:dashed;font-style:italic}
+  .leaf .opt b{font:600 10.5px/1 var(--mono);color:#8a6a2a;margin-right:8px}
+
+  section{padding:44px 0;border-top:1px solid var(--line)}
+  h2{font:400 clamp(24px,3vw,32px)/1.15 var(--serif);margin:0 0 8px}
+  .sub{color:var(--mut);font-size:13px;margin:0 0 26px;max-width:62ch}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card h3{margin:0 0 8px;font:600 12px/1.3 var(--mono);letter-spacing:.06em;color:#f0e7d4}
+  .card p{margin:0;font-size:13px;color:#b6ae9e;line-height:1.65}
+  .card .n{font:600 10.5px/1 var(--mono);letter-spacing:.2em;color:var(--amber-dim);display:block;margin-bottom:10px}
+
+  .truth{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:860px){.truth{grid-template-columns:1fr}}
+  .truth .card p strong{color:#e9e2d4}
+  ul.plain{margin:0;padding-left:18px;color:#b6ae9e;font-size:13px;line-height:1.8}
+  ul.plain code{background:#00000055;padding:1px 5px;border-radius:4px;font-size:12px}
+
+  footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--mut);font-size:12px;display:flex;gap:16px;flex-wrap:wrap}
+  footer a{text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="mark" aria-hidden="true"></div>
+    <div class="brand">Story Engine</div>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#failure">When it goes wrong</a>
+      <a href="play/index.html">Open the book</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="hero">
+    <div>
+      <p class="kicker">An offline interactive book</p>
+      <h1>A book the reader <em>moves through</em></h1>
+      <p class="lede">
+        Most “choose your own adventure” apps forget what you chose. This one does not:
+        <strong>every choice changes what you carry</strong>, what you carry decides which doors are
+        still open, and the trail shows every passage you have been through — in order.
+        One page, on your device. No account, no server, no network.
+      </p>
+      <div class="cta">
+        <a class="btn" href="play/index.html">Read The Fifth Mile</a>
+        <a class="btn alt" href="https://github.com/drsamonline/app-story-engine/releases/latest">Download for Windows / Android</a>
+      </div>
+      <p class="fine">Works from a USB stick, a file:// path, or GitHub Pages. 141 assertions prove the engine.</p>
+    </div>
+
+    <div class="leaf" aria-hidden="true">
+      <p class="k">Passage 1 · the lamp room</p>
+      <h3>The lamp room</h3>
+      <p>Three measures of oil, a ship due past the fifth mile before midnight, and a wind that has been getting personal since dusk.</p>
+      <div class="opts">
+        <div class="opt"><b>1</b>Trim the wick and bank what oil is left</div>
+        <div class="opt"><b>2</b>Open the valve wide and let the whole sky see</div>
+        <div class="opt closed"><b>·</b>Row out to the bell buoy — closed by what you carry</div>
+      </div>
+    </div>
+  </div>
+
+  <section id="how">
+    <h2>The state is the story</h2>
+    <p class="sub">A book is data: passages, choices, and what those choices change. Nothing is evaluated as code, so a book is readable, reviewable and safe to ship.</p>
+    <div class="grid">
+      <div class="card">
+        <span class="n">01</span>
+        <h3>A choice leads somewhere else</h3>
+        <p>Two choices at one passage lead to two different passages. The engine refuses a choice that does not exist, and shows you the passage you are actually in.</p>
+      </div>
+      <div class="card">
+        <span class="n">02</span>
+        <h3>The same choices, the same ending</h3>
+        <p>No dice, no clock, no randomness in the engine. Replay the same choices and you get the same ending, the same state and the same trail — every time.</p>
+      </div>
+      <div class="card">
+        <span class="n">03</span>
+        <h3>The trail is every passage, in order</h3>
+        <p>A return visit is recorded again, not collapsed. The map is a history of your reading, not a list of places that exist.</p>
+      </div>
+      <div class="card">
+        <span class="n">04</span>
+        <h3>Closed doors are shown closed</h3>
+        <p>When your state closes a choice, the app shows it greyed with the reason — “nerve &gt;= 1 (you have 0)”. You see the book remembering.</p>
+      </div>
+      <div class="card">
+        <span class="n">05</span>
+        <h3>Your place is kept, or you are told why not</h3>
+        <p>Saved on the device. If storage is full or unavailable the reading continues and the app says the place will not be kept — it does not fail quietly.</p>
+      </div>
+      <div class="card">
+        <span class="n">06</span>
+        <h3>A broken book is refused, not half-read</h3>
+        <p>The book is compiled before a word is shown: a choice pointing at a missing passage, an unreachable page, a dead end — each is an error, named.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="failure">
+    <h2>What it does when things go wrong</h2>
+    <p class="sub">Every app in this fleet names its failure paths, and tests them. These are this one's, as they are written in the spec.</p>
+    <div class="truth">
+      <div class="card">
+        <h3>Bad input</h3>
+        <p>A choice that does not exist in the current passage is <strong>refused with the passage shown</strong>, rather than advancing into an undefined state. A fractional index, a string, a negative number — all refused, all leave you where you were.</p>
+      </div>
+      <div class="card">
+        <h3>No network</h3>
+        <p><strong>Nothing changes.</strong> The book is on the device. The page calls no <code>fetch</code>, opens no socket, and loads no script from another host — asserted in the test suite, not just promised.</p>
+      </div>
+      <div class="card">
+        <h3>Storage full or unavailable</h3>
+        <p>The reading <strong>continues</strong>. The app says the place will not be kept, offers an export, and does not silently return you to the start on reload.</p>
+      </div>
+      <div class="card">
+        <h3>Corrupt saved state</h3>
+        <p>An unreadable save is <strong>reported</strong> with the passage it claims and an export of the raw file. The app never resumes at the beginning and presents it as your place.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it is built on</h2>
+    <p class="sub">Two shared kits, copied in so the app runs from <code>file://</code> with no build step: <code>web-kit</code> for the namespaced device storage, and <code>export-kit</code> for getting a reading off the device as a file.</p>
+    <ul class="plain">
+      <li>The engine is one file, <code>story-engine.js</code> — pure functions over a book and a state.</li>
+      <li>The book is one file, <code>book.js</code> — passages, choices, conditions, consequences.</li>
+      <li>The test suite is <code>node test-node.js</code>: 141 assertions over the real engine and the real book.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <span>PolyForm Noncommercial 1.0.0 · © 2026 Dr Sohil Momin</span>
+  <a href="https://github.com/drsamonline/app-story-engine">Source</a>
+  <a href="play/index.html">Open the book</a>
+  <a href="https://github.com/drsamonline/app-story-engine/blob/main/PRIVACY.md">Privacy</a>
+  <a href="https://github.com/drsamonline/app-story-engine/security/policy">Security</a>
+</footer>
+
+</body>
+</html>

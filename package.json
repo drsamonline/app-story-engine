@@ -1,0 +1,11 @@
+{
+  "name": "app-story-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Story Engine — a book the reader moves through: choices, carried state, and a trail of where you have been.",
+  "scripts": {
+    "test": "node test-node.js"
+  },
+  "dependencies": {},
+  "license": "SEE LICENSE IN LICENSE"
+}

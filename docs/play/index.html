@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Engine — a book the reader moves through</title>
+<meta name="description" content="An offline reader for books that remember: your choices carry state, close doors and open others, and the trail shows every passage you have been through. No accounts, no server, no network.">
+<meta name="theme-color" content="#12100c">
+<style>
+  :root{
+    --ink:#0e0c0a; --panel:#17140f; --panel2:#1d1913; --line:#302a20;
+    --paper:#f2e9d8; --paper-ink:#191510; --paper-line:#d8cbb2;
+    --amber:#d9a02b; --amber-dim:#8a6420; --bad:#b4432f; --ok:#3f7a52; --mut:#9c9384;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    color:#e9e2d4; font:14.5px/1.65 var(--mono);
+    background:
+      radial-gradient(900px 420px at 78% -10%, #241d13 0%, transparent 62%),
+      radial-gradient(700px 300px at 8% 110%, #1a1710 0%, transparent 60%),
+      var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--amber)}
+  .shell{max-width:1120px;margin:0 auto;padding:0 18px 48px}
+
+  header{display:flex;align-items:center;gap:12px;height:58px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap}
+  .mark{width:24px;height:24px;border:1px solid var(--amber);border-radius:4px;position:relative;flex:0 0 auto}
+  .mark:before{content:"";position:absolute;inset:4px;border:1px solid var(--amber-dim);border-radius:2px}
+  h1{font:600 13px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;margin:0}
+  .tagline{color:var(--mut);font-size:12px;letter-spacing:.04em}
+  header .right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  button{
+    font:600 12px/1 var(--mono);letter-spacing:.04em;padding:9px 12px;border-radius:8px;cursor:pointer;
+    background:var(--panel2);color:#e9e2d4;border:1px solid var(--line);
+  }
+  button:hover{border-color:var(--amber-dim);color:#fff}
+  button.primary{background:var(--amber);color:#1a1204;border-color:var(--amber)}
+  button.primary:hover{filter:brightness(1.07)}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.45;cursor:not-allowed}
+
+  .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;align-items:start}
+  @media (max-width:900px){.cols{grid-template-columns:1fr}}
+
+  /* the page of the book */
+  .leaf{
+    background:linear-gradient(180deg,#f6efdf,#eadfc7); color:var(--paper-ink);
+    border-radius:12px; padding:26px 26px 20px; border:1px solid #cbbd9f;
+    box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 #fff8;
+    position:relative; min-height:320px;
+  }
+  .leaf:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:12px 0 0 12px;
+    background:repeating-linear-gradient(180deg,#c9b58c 0 2px,transparent 2px 7px);opacity:.5}
+  .leaf .kicker{font:600 10.5px/1 var(--mono);letter-spacing:.26em;text-transform:uppercase;color:#8a6a2a;margin:0 0 10px}
+  .leaf h2{font:400 clamp(26px,3.4vw,34px)/1.1 var(--serif);margin:0 0 14px;letter-spacing:-.01em}
+  .leaf p.body{font:16px/1.72 var(--serif);margin:0 0 20px;color:#231d14;hyphens:auto}
+  .leaf .ending-mark{display:inline-block;font:600 10.5px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;
+    color:#1f4a32;background:#dbe8d8;border:1px solid #a9c4a6;border-radius:999px;padding:6px 10px;margin:0 0 12px}
+
+  .choices{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+  .choices button{
+    width:100%;text-align:left;font:400 14.5px/1.5 var(--serif);padding:12px 14px;border-radius:9px;
+    background:#fffdf6;color:#1d1811;border:1px solid #c8b995;
+  }
+  .choices button:hover{background:#fff;border-color:#a98d52;transform:translateX(2px)}
+  .choices button .num{font:600 11px/1 var(--mono);color:#8a6a2a;margin-right:9px}
+  .choices li.locked button{color:#8b8375;background:#efe8d8;border-style:dashed;cursor:not-allowed;font-style:italic}
+  .choices li.locked button:hover{transform:none;background:#efe8d8;border-color:#c8b995}
+  .choices li.locked button .why{display:block;font:400 11px/1.4 var(--mono);color:#9a8f79;margin-top:5px;font-style:normal}
+
+  /* the right column */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .card h3{font:600 10.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
+  .card h3 .count{color:var(--amber);letter-spacing:.08em}
+
+  .trail{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto}
+  .trail li{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px dotted #2a251d}
+  .trail li:last-child{border-bottom:0}
+  .trail .step{font:600 10.5px/1 var(--mono);color:var(--amber-dim);min-width:22px;text-align:right}
+  .trail .t{font-size:13px}
+  .trail li.here .t{color:var(--amber);font-weight:600}
+  .trail li.end .t:after{content:" · end";color:var(--ok);font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+  .trail .empty{color:var(--mut);font-size:12.5px}
+
+  .state{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12.5px}
+  .state .k{color:var(--mut)}
+  .state .v{color:#efe6d3;text-align:right;font-weight:600}
+  .state .v.up{color:var(--ok)}
+
+  .notice{border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.55;margin-bottom:12px;border:1px solid}
+  .notice.info{background:#1b1a13;border-color:var(--amber-dim);color:#e8d9b4}
+  .notice.warn{background:#221711;border-color:#7d4a2a;color:#f0c9a8}
+  .notice.bad{background:#241312;border-color:#7d2f22;color:#f3bcb0}
+  .notice .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .notice button{font-size:11px;padding:7px 10px}
+  .notice code{background:#00000055;padding:1px 5px;border-radius:4px;font-size:11.5px;word-break:break-all}
+
+  footer{color:var(--mut);font-size:11.5px;border-top:1px solid var(--line);margin-top:22px;padding-top:14px;display:flex;gap:14px;flex-wrap:wrap}
+  footer a{text-decoration:none}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="mark" aria-hidden="true"></div>
+    <div>
+      <h1>Story Engine</h1>
+      <div class="tagline" id="book-title">The Fifth Mile</div>
+    </div>
+    <div class="right">
+      <button id="btn-save" class="ghost" title="Keep this place on this device">Keep place</button>
+      <button id="btn-export" class="ghost" title="Download the reading as a file">Export</button>
+      <button id="btn-import" class="ghost" title="Open a reading from a file">Open</button>
+      <button id="btn-new" class="ghost" title="Start the book again">New reading</button>
+      <input id="file" type="file" accept="application/json,.json" class="sr" aria-hidden="true" tabindex="-1">
+    </div>
+  </header>
+
+  <div id="notices" aria-live="polite"></div>
+
+  <div class="cols">
+    <main>
+      <article class="leaf" id="leaf" aria-live="polite">
+        <p class="kicker" id="passage-id">—</p>
+        <h2 id="passage-title">Loading</h2>
+        <div id="ending-mark"></div>
+        <p class="body" id="passage-text"></p>
+        <ul class="choices" id="choices"></ul>
+      </article>
+    </main>
+
+    <aside>
+      <section class="card">
+        <h3>The trail <span class="count" id="trail-count"></span></h3>
+        <ul class="trail" id="trail"></ul>
+      </section>
+      <section class="card">
+        <h3>What you carry</h3>
+        <div class="state" id="state"></div>
+      </section>
+      <section class="card">
+        <h3>How this book works</h3>
+        <p style="margin:0;font-size:12.5px;color:#b9b1a1;line-height:1.6">
+          Every choice changes what you carry, and what you carry decides which doors are still open.
+          A door you closed is shown closed rather than hidden — that is the book remembering.
+          Nothing leaves this device.
+        </p>
+      </section>
+    </aside>
+  </div>
+
+  <footer>
+    <span>Offline · no account · no network</span>
+    <a href="../index.html">About Story Engine</a>
+    <span id="foot-version"></span>
+  </footer>
+</div>
+
+<script src="web-kit.js"></script>
+<script src="export-kit.js"></script>
+<script src="story-engine.js"></script>
+<script src="book.js"></script>
+<script>
+(function () {
+  "use strict";
+  var BOOK = window.THE_FIFTH_MILE;
+  var SE = window.StoryEngine;
+  var STORE_KEY = "reading:" + BOOK.id;
+
+  /* The store the engine writes through. web-kit owns the namespace and the
+   * guards; this adapter turns its boolean into the exception the engine needs
+   * in order to say WHY the place was not kept (full vs unavailable). */
+  var backend = {
+    getItem: function (k) {
+      var v = window.Loom ? window.Loom.storage.get(k, null) : null;
+      return v === null || v === undefined ? null : JSON.stringify(v);
+    },
+    setItem: function (k, raw) {
+      if (!window.Loom) throw new Error("no storage runtime");
+      if (!window.Loom.storage.set(k, JSON.parse(raw))) {
+        var e = new Error("the device refused to keep it");
+        e.name = "QuotaExceededError";
+        throw e;
+      }
+    },
+    removeItem: function (k) { if (window.Loom) window.Loom.storage.remove(k); }
+  };
+  var store = SE.createStore(backend, STORE_KEY);
+
+  var el = function (id) { return document.getElementById(id); };
+  var state = SE.newGame(BOOK);
+  var notice = null;          /* {kind, text, actions:[{label,fn}]} */
+  var kept = true;            /* is the place being kept? */
+
+  /* ---- compile first: a broken book is refused, never half-read ---- */
+  var compiled = SE.compile(BOOK);
+  if (!compiled.ok) {
+    render();
+    say("bad", "This book cannot be read: " + compiled.errors[0].message + ". Nothing has been changed.");
+    return;
+  }
+
+  function say(kind, text, actions) { notice = { kind: kind, text: text, actions: actions || [] }; renderNotices(); }
+  function clearNotice() { notice = null; renderNotices(); }
+
+  function renderNotices() {
+    var box = el("notices");
+    box.innerHTML = "";
+    if (kept === false && (!notice || notice.kind !== "bad")) {
+      /* the reading continues; only the keeping has stopped */
+    }
+    if (!notice) return;
+    var d = document.createElement("div");
+    d.className = "notice " + notice.kind;
+    var p = document.createElement("div");
+    p.textContent = notice.text;
+    d.appendChild(p);
+    if (notice.actions.length) {
+      var row = document.createElement("div");
+      row.className = "row";
+      notice.actions.forEach(function (a) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = a.label;
+        b.addEventListener("click", a.fn);
+        row.appendChild(b);
+      });
+      d.appendChild(row);
+    }
+    box.appendChild(d);
+  }
+
+  function render() {
+    var p = SE.passage(BOOK, state.at);
+    el("book-title").textContent = BOOK.title;
+    el("passage-id").textContent = "Passage " + state.steps + (p.ending ? " · end of the book" : "");
+    el("passage-title").textContent = p.title;
+    el("passage-text").textContent = p.text;
+    el("ending-mark").innerHTML = "";
+    if (p.ending) {
+      var m = document.createElement("span");
+      m.className = "ending-mark";
+      m.textContent = state.ending || "The end";
+      el("ending-mark").appendChild(m);
+    }
+    renderChoices();
+    renderTrail();
+    renderState();
+  }
+
+  function renderChoices() {
+    var ul = el("choices");
+    ul.innerHTML = "";
+    var open = SE.choicesFor(BOOK, state);
+    var locked = SE.lockedChoicesFor(BOOK, state);
+    var node = BOOK.nodes[state.at];
+
+    if (node.ending) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "primary";
+      b.textContent = "Begin the book again";
+      b.addEventListener("click", function () { startFresh(true); });
+      li.appendChild(b);
+      ul.appendChild(li);
+      return;
+    }
+
+    open.forEach(function (c, n) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      var num = document.createElement("span");
+      num.className = "num";
+      num.textContent = String(n + 1);
+      b.appendChild(num);
+      b.appendChild(document.createTextNode(c.label));
+      b.addEventListener("click", function () { choose(c.index); });
+      li.appendChild(b);
+      ul.appendChild(li);
+    });
+
+    locked.forEach(function (c) {
+      var li = document.createElement("li");
+      li.className = "locked";
+      var b = document.createElement("button");
+      b.type = "button";
+      b.disabled = true;
+      b.appendChild(document.createTextNode(c.label));
+      var why = document.createElement("span");
+      why.className = "why";
+      why.textContent = "closed by what you carry — " + reasonFor(c.index);
+      b.appendChild(why);
+      li.appendChild(b);
+      ul.appendChild(li);
+    });
+  }
+
+  /* Say which condition closed the door, in the book's own words. */
+  function reasonFor(index) {
+    var c = BOOK.nodes[state.at].choices[index];
+    return (c.requires || []).map(function (r) {
+      return r.var + " " + r.op + " " + r.value + " (you have " + state.vars[r.var] + ")";
+    }).join(", ") || "a condition you no longer meet";
+  }
+
+  function renderTrail() {
+    var ul = el("trail");
+    ul.innerHTML = "";
+    var t = SE.trail(BOOK, state);
+    el("trail-count").textContent = t.length + (t.length === 1 ? " passage" : " passages");
+    t.forEach(function (x, i) {
+      var li = document.createElement("li");
+      if (i === t.length - 1) li.className = "here";
+      if (x.ending) li.className += " end";
+      var s = document.createElement("span");
+      s.className = "step";
+      s.textContent = x.step;
+      var n = document.createElement("span");
+      n.className = "t";
+      n.textContent = x.title;
+      li.appendChild(s); li.appendChild(n);
+      ul.appendChild(li);
+    });
+  }
+
+  function renderState() {
+    var box = el("state");
+    box.innerHTML = "";
+    Object.keys(state.vars).forEach(function (k) {
+      var a = document.createElement("div"); a.className = "k"; a.textContent = k;
+      var b = document.createElement("div"); b.className = "v"; b.textContent = String(state.vars[k]);
+      box.appendChild(a); box.appendChild(b);
+    });
+    var a2 = document.createElement("div"); a2.className = "k"; a2.textContent = "steps";
+    var b2 = document.createElement("div"); b2.className = "v"; b2.textContent = String(state.steps);
+    box.appendChild(a2); box.appendChild(b2);
+  }
+
+  function keep() {
+    var r = store.save(state);
+    if (r.saved) { kept = true; return true; }
+    kept = false;
+    say(r.code === "storage-full" ? "warn" : "warn",
+      "Your place will not be kept: " + r.message + ". You can keep reading — export the reading if you want it back later.",
+      [{ label: "Export the reading", fn: exportReading }]);
+    return false;
+  }
+
+  function choose(index) {
+    var r = SE.advance(BOOK, state, index);
+    if (!r.ok) {
+      /* refused: show the passage the reader is actually in, and say why */
+      say("bad", "That is not a choice this passage offers (" + r.code + "): " + r.message + ". You are still at “" + (r.passage ? r.passage.title : state.at) + "”.",
+        [{ label: "Stay here", fn: clearNotice }]);
+      render();
+      return;
+    }
+    clearNotice();
+    state = r.state;
+    keep();
+    render();
+    el("leaf").scrollIntoView({ block: "nearest" });
+  }
+
+  function startFresh(ask) {
+    if (ask && !window.confirm("Start the book again? The place you are keeping on this device will be replaced.")) return;
+    state = SE.newGame(BOOK);
+    store.clear();
+    kept = true;
+    clearNotice();
+    render();
+  }
+
+  function exportReading() {
+    var raw = SE.save(state);
+    if (window.Export && window.Export.text) {
+      window.Export.text("story-engine-reading.json", raw, "application/json");
+    } else {
+      var url = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
+      var a = document.createElement("a");
+      a.href = url; a.download = "story-engine-reading.json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+    say("info", "The reading has been exported as a file. Open it on any device with the same book.");
+  }
+
+  function restore(fromRaw, source) {
+    var r = fromRaw === undefined ? store.load(BOOK) : SE.load(BOOK, fromRaw);
+    if (r.ok) {
+      state = r.state;
+      kept = true;
+      clearNotice();
+      render();
+      say("info", "Resumed at “" + SE.passage(BOOK, state.at).title + "”" + (source ? " from " + source : "") + ".");
+      return;
+    }
+    if (r.code === "empty") { say("info", "There is no kept place to open on this device."); return; }
+    /* A corrupt save is REPORTED, with its passage and an export — the reader
+     * is never quietly returned to the beginning as if that were their place. */
+    var claimed = r.claimed ? " It claims the passage “" + r.claimed + "”, which this book does not have." : "";
+    say("bad", "The kept reading could not be opened: " + r.message + "." + claimed + " You are still at “" + SE.passage(BOOK, state.at).title + "”; nothing has been overwritten.",
+      [{ label: "Export the unreadable save", fn: function () {
+          if (window.Export && window.Export.text) window.Export.text("story-engine-unreadable.json", r.excerpt || "", "application/json");
+        } },
+       { label: "Dismiss", fn: clearNotice }]);
+  }
+
+  /* ---- wiring ---- */
+  el("btn-save").addEventListener("click", function () {
+    if (keep()) say("info", "Your place is kept on this device — “" + SE.passage(BOOK, state.at).title + "”.");
+  });
+  el("btn-export").addEventListener("click", exportReading);
+  el("btn-import").addEventListener("click", function () { el("file").click(); });
+  el("file").addEventListener("change", function (ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () { restore(String(rd.result), f.name); ev.target.value = ""; };
+    rd.onerror = function () { say("bad", "That file could not be read. Nothing has been changed."); ev.target.value = ""; };
+    rd.readAsText(f);
+  });
+  el("btn-new").addEventListener("click", function () { startFresh(true); });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 9) {
+      var open = SE.choicesFor(BOOK, state);
+      if (open[n - 1]) { e.preventDefault(); choose(open[n - 1].index); }
+    }
+  });
+
+  el("foot-version").textContent = "engine " + (SE.FORMAT || "");
+
+  /* ---- open where the reader left off, and say so if we cannot ---- */
+  render();
+  var kept0 = store.load(BOOK);
+  if (kept0.ok) {
+    state = kept0.state;
+    render();
+    say("info", "Resumed at “" + SE.passage(BOOK, state.at).title + "” — the place kept on this device.",
+      [{ label: "Start again", fn: function () { startFresh(true); } }]);
+  } else if (kept0.code === "empty") {
+    /* first visit: nothing to say */
+  } else {
+    var claimed0 = kept0.claimed ? " It claims the passage “" + kept0.claimed + "”, which this book does not have." : "";
+    say("bad", "The kept reading could not be opened: " + kept0.message + "." + claimed0 + " You are at the beginning of the book, and nothing has been overwritten.",
+      [{ label: "Export the unreadable save", fn: function () {
+          if (window.Export && window.Export.text) window.Export.text("story-engine-unreadable.json", kept0.excerpt || "", "application/json");
+        } },
+       { label: "Dismiss", fn: clearNotice }]);
+  }
+})();
+</script>
+</body>
+</html>
