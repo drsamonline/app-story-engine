@@ -3,16 +3,16 @@
   "locked": false,
   "files": {
     "README.md": {
-      "sha": "d517e9bd34ff142b1b50b5403f922875f2fdde47",
-      "producer": "new-app@e249350",
-      "class": "generated",
-      "at": "2026-11-09T18:40:06Z"
+      "sha": "60d6656382baa5777cf9b807336d7413c4ec4410",
+      "producer": "audit-2026-11-10",
+      "class": "agent",
+      "at": "2026-11-10T13:41:21Z"
     },
     "docs/index.html": {
-      "sha": "4d95e060c4edeba8dd48ce659d2e9dd231143bfa",
-      "producer": "app-story-engine@1.0.0",
-      "class": "generated",
-      "at": "2026-11-09T18:42:48Z"
+      "sha": "d09fc9c7396e4760c88a427962078e04f8c8cde0",
+      "producer": "audit-2026-11-10",
+      "class": "agent",
+      "at": "2026-11-10T13:41:22Z"
     },
     ".github/workflows/build-apps.yml": {
       "sha": "dc8303d20604f44cb45390339cb76f825de6852b",
@@ -45,5 +45,5 @@
       "at": "2026-11-09T18:42:49Z"
     }
   },
-  "updated": "2026-11-09T18:44:13Z"
+  "updated": "2026-11-10T13:41:22Z"
 }
