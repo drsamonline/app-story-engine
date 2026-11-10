@@ -15,10 +15,10 @@
       "at": "2026-11-10T13:41:22Z"
     },
     ".github/workflows/build-apps.yml": {
-      "sha": "dc8303d20604f44cb45390339cb76f825de6852b",
-      "producer": "app-story-engine@1.0.0",
+      "sha": "721eadc85f649f587e8d52632fc2337cf83a6fd7",
+      "producer": "audit-2026-11-10",
       "class": "canonical",
-      "at": "2026-11-09T18:44:13Z"
+      "at": "2026-11-10T14:47:31Z"
     },
     "docs/play/index.html": {
       "sha": "b88b1e28df6bd753d7827eeb6ae026ec8367b67c",
@@ -45,5 +45,5 @@
       "at": "2026-11-09T18:42:49Z"
     }
   },
-  "updated": "2026-11-10T13:41:22Z"
+  "updated": "2026-11-10T14:47:31Z"
 }
