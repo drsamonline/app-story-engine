@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   app:
-    uses: drsamonline/app-builder/.github/workflows/build.yml@49c2e0b
+    uses: drsamonline/app-builder/.github/workflows/build.yml@49c2e0b172890f9334bbc7167a0e7fb5cd3756ba
     with:
       app_name: app-story-engine
       app_src: docs/play
